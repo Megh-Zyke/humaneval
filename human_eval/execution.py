@@ -4,7 +4,7 @@ import contextlib
 import faulthandler
 import io
 import os
-import multiprocessing
+import multiprocess
 import platform
 import signal
 import tempfile
@@ -55,7 +55,7 @@ def check_correctness(problem: Dict, completion: str, timeout: float,
 # information on how OpenAI sandboxes its code, see the accompanying paper.
 # Once you have read this disclaimer and taken appropriate precautions, 
 # uncomment the following line and proceed at your own risk:
-#                         exec(check_program, exec_globals)
+                        exec(check_program, exec_globals)
                 result.append("passed")
             except TimeoutException:
                 result.append("timed out")
@@ -67,10 +67,10 @@ def check_correctness(problem: Dict, completion: str, timeout: float,
             os.rmdir = rmdir
             os.chdir = chdir
 
-    manager = multiprocessing.Manager()
+    manager = multiprocess.Manager()
     result = manager.list()
 
-    p = multiprocessing.Process(target=unsafe_execute)
+    p = multiprocess.Process(target=unsafe_execute)
     p.start()
     p.join(timeout=timeout + 1)
     if p.is_alive():
@@ -87,16 +87,19 @@ def check_correctness(problem: Dict, completion: str, timeout: float,
     )
 
 
+import threading
+
+class TimeoutException(Exception):
+    pass
+
 @contextlib.contextmanager
 def time_limit(seconds: float):
-    def signal_handler(signum, frame):
-        raise TimeoutException("Timed out!")
-    signal.setitimer(signal.ITIMER_REAL, seconds)
-    signal.signal(signal.SIGALRM, signal_handler)
+    timer = threading.Timer(seconds, lambda: (_ for _ in ()).throw(TimeoutException("Timed out!")))
+    timer.start()
     try:
         yield
     finally:
-        signal.setitimer(signal.ITIMER_REAL, 0)
+        timer.cancel()
 
 
 @contextlib.contextmanager
