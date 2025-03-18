@@ -1,4 +1,4 @@
-# HumanEval: Hand-Written Evaluation Set
+# HumanEval: Configured for Windows execution
 
 ## Requirements
 
